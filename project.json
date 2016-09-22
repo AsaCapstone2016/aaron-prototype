@@ -1,0 +1,11 @@
+{
+  "name": "aaron-test",
+  "description": "Just trying to figure things out",
+  "memory": 128,
+  "timeout": 5,
+  "role": "arn:aws:iam::516553083161:role/aaron-test_lambda_function",
+  "environment": {},
+  "hooks": {
+      "build": "npm run build"
+  }
+}
