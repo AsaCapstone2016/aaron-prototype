@@ -121,7 +121,7 @@ const wit = new Wit({
 
 exports.handle = (e, ctx, callback) => {
 	let responseCode = 200;
-	let
+	
 	if (e.httpMethod === "POST") {
 		// Process POST request containing message events
 		let responseCode = 200;
