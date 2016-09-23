@@ -8,12 +8,12 @@ const request = require('request');
 let Wit = require('cse498capstonewit').Wit;
 let log = require('cse498capstonewit').log;
 
-let FB_VERIFY_TOKEN = null;
-crypto.randomBytes(8, (err, buff) => {
-	if (err) throw err;
-	FB_VERIFY_TOKEN = buff.toString('hex');
-	console.log(`/webhook will accept the Verify Token "${FB_VERIFY_TOKEN}"`);
-});
+let FB_VERIFY_TOKEN = 'this_is_my_verify_token';
+// crypto.randomBytes(8, (err, buff) => {
+// 	if (err) throw err;
+// 	FB_VERIFY_TOKEN = buff.toString('hex');
+// 	console.log(`/webhook will accept the Verify Token "${FB_VERIFY_TOKEN}"`);
+// });
 
 // ----------------------------------------------------------------------------
 // Messenger API specific code
@@ -121,6 +121,8 @@ const wit = new Wit({
 
 exports.handle = (e, ctx, callback) => {
 	let responseCode = 200;
+  let responseHeaders = {};
+  let responseBody = '';
 	
 	if (e.httpMethod === "POST") {
 		// Process POST request containing message events
@@ -181,12 +183,6 @@ exports.handle = (e, ctx, callback) => {
 				});
 			});
 		}
-		let response = {
-			statusCode: responseCode,
-			headers: {},
-			body: {}
-		}
-		ctx.succeed(response);
 
 	} else if (e.httpMethod === "GET") {
 		// Process GET request for webhook setup
@@ -194,11 +190,18 @@ exports.handle = (e, ctx, callback) => {
 
 		if (params['hub.mode'] === 'subscribe' && params['hub.verify_token'] === FB_VERIFY_TOKEN) {
 			let challenge = params['hub.challenge'];
-			callback(null, parseInt(challenge));
+			responseBody = parseInt(challenge);
 		} else {
-			callback(null, 'Error, wrong validation token');
+			responseBody = 'Error, wrong validation token';
 		}
 	}
+
+  let response = {
+      statusCode: responseCode,
+      headers: responseHeaders,
+      body: responseBody
+    }
+  ctx.succeed(response);
 };
 
 /*
