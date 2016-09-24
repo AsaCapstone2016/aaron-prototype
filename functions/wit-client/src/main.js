@@ -120,69 +120,70 @@ const wit = new Wit({
 });
 
 exports.handle = (e, ctx, callback) => {
-	let responseCode = 200;
-  let responseHeaders = {};
-  let responseBody = '';
+	var responseCode = 200;
+  var responseHeaders = {};
+  var responseBody = '';
 	
 	if (e.httpMethod === "POST") {
 		// Process POST request containing message events
-		let responseCode = 200;
+    console.log(`event: ${JSON.stringify(e, null, 2)}`);
+    console.log(`context: ${JSON.stringify(ctx, null, 2)}`);
 
-		const data = e.body;
-		if (data.object === 'page') {
-			data.entry.forEach(entry => {
-				entry.messaging.forEach(event => {
-					if (event.message) {
-						// Yay! We got a new message!
-						// We retrieve the Facebook user ID of the sender
-						const sender = event.sender.id;
+	// 	const data = e.body;
+	// 	if (data.object === 'page') {
+	// 		data.entry.forEach(entry => {
+	// 			entry.messaging.forEach(event => {
+	// 				if (event.message) {
+	// 					// Yay! We got a new message!
+	// 					// We retrieve the Facebook user ID of the sender
+	// 					const sender = event.sender.id;
 
-						// We retrieve the user's current session, or create one if it doesn't exist
-						// This is needed for our bot to figure out the conversation history
-						const sessionId = findOrCreateSession(sender);
+	// 					// We retrieve the user's current session, or create one if it doesn't exist
+	// 					// This is needed for our bot to figure out the conversation history
+	// 					const sessionId = findOrCreateSession(sender);
 
-						// We retrieve the message content
-						const {text, attachments} = event.message;
+	// 					// We retrieve the message content
+	// 					const {text, attachments} = event.message;
 
-						if (attachments) {
-							// We received an attachment
-							// Let's reply with an automatic message
-							fbMessage(sender, 'Sorry I can only process text messages for now.')
-							.catch(console.error);
-						} else if (text) {
-							// We received a text message
+	// 					if (attachments) {
+	// 						// We received an attachment
+	// 						// Let's reply with an automatic message
+	// 						fbMessage(sender, 'Sorry I can only process text messages for now.')
+	// 						.catch(console.error);
+	// 					} else if (text) {
+	// 						// We received a text message
 
-							// Let's forward the message to the Wit.ai Bot Engine
-							// This will run all actions until our bot has nothing left to do
-							wit.runActions(
-								sessionId, // the user's current session
-								text, // the user's message
-								sessions[sessionId].context // the user's current session state
-							).then((context) => {
-								// Our bot did everything it has to do.
-								// Now it's waiting for further messages to proceed.
-								console.log('Waiting for next user messages');
+	// 						// Let's forward the message to the Wit.ai Bot Engine
+	// 						// This will run all actions until our bot has nothing left to do
+	// 						wit.runActions(
+	// 							sessionId, // the user's current session
+	// 							text, // the user's message
+	// 							sessions[sessionId].context // the user's current session state
+	// 						).then((context) => {
+	// 							// Our bot did everything it has to do.
+	// 							// Now it's waiting for further messages to proceed.
+	// 							console.log('Waiting for next user messages');
 
-								// Based on the session state, you might want to reset the session.
-								// This depends heavily on the business logic of your bot.
-								// Example:
-								// if (context['done']) {
-								//   delete sessions[sessionId];
-								// }
+	// 							// Based on the session state, you might want to reset the session.
+	// 							// This depends heavily on the business logic of your bot.
+	// 							// Example:
+	// 							// if (context['done']) {
+	// 							//   delete sessions[sessionId];
+	// 							// }
 
-								// Updating the user's current session state
-								sessions[sessionId].context = context;
-							})
-							.catch((err) => {
-								console.error('Oops! Got an error from Wit: ', err.stack || err);
-							})
-						}
-					} else {
-						console.log('received event', JSON.stringify(event));
-					}
-				});
-			});
-		}
+	// 							// Updating the user's current session state
+	// 							sessions[sessionId].context = context;
+	// 						})
+	// 						.catch((err) => {
+	// 							console.error('Oops! Got an error from Wit: ', err.stack || err);
+	// 						})
+	// 					}
+	// 				} else {
+	// 					console.log('received event', JSON.stringify(event));
+	// 				}
+	// 			});
+	// 		});
+	// 	}
 
 	} else if (e.httpMethod === "GET") {
 		// Process GET request for webhook setup
@@ -200,7 +201,7 @@ exports.handle = (e, ctx, callback) => {
       statusCode: responseCode,
       headers: responseHeaders,
       body: responseBody
-    }
+    };
   ctx.succeed(response);
 };
 
