@@ -29,16 +29,16 @@ const fbMessage = (id, text) => {
   const qs = 'access_token=' + encodeURIComponent(FB_PAGE_TOKEN);
   return fetch('https://graph.facebook.com/me/messages?' + qs, {
     method: 'POST',
-    headers: {'Content-Type': 'application/json'},
+    headers: { 'Content-Type': 'application/json' },
     body,
   })
-  .then(rsp => rsp.json())
-  .then(json => {
-    if (json.error && json.error.message) {
-      throw new Error(json.error.message);
-    }
-    return json;
-  });
+    .then(rsp => rsp.json())
+    .then(json => {
+      if (json.error && json.error.message) {
+        throw new Error(json.error.message);
+      }
+      return json;
+    });
 };
 
 // ----------------------------------------------------------------------------
@@ -61,7 +61,7 @@ const findOrCreateSession = (fbid) => {
   if (!sessionId) {
     // No session found for user fbid, let's create a new one
     sessionId = new Date().toISOString();
-    sessions[sessionId] = {fbid: fbid, context: {}};
+    sessions[sessionId] = { fbid: fbid, context: {} };
   }
   return sessionId;
 };
@@ -77,15 +77,15 @@ const actions = {
       // Let's forward our bot response to her.
       // We return a promise to let our bot know when we're done sending
       return fbMessage(recipientId, text)
-      .then(() => null)
-      .catch((err) => {
-        console.error(
-          'Oops! An error occurred while forwarding the response to',
-          recipientId,
-          ':',
-          err.stack || err
-        );
-      });
+        .then(() => null)
+        .catch((err) => {
+          console.error(
+            'Oops! An error occurred while forwarding the response to',
+            recipientId,
+            ':',
+            err.stack || err
+          );
+        });
     } else {
       console.error('Oops! Couldn\'t find user for session:', sessionId);
       // Giving the wheel back to our bot
@@ -120,88 +120,93 @@ const wit = new Wit({
 });
 
 exports.handle = (e, ctx, callback) => {
-	var responseCode = 200;
+  var responseCode = 200;
   var responseHeaders = {};
   var responseBody = '';
-	
-	if (e.httpMethod === "POST") {
-		// Process POST request containing message events
-    console.log(`event: ${JSON.stringify(e, null, 2)}`);
-    console.log(`context: ${JSON.stringify(ctx, null, 2)}`);
 
-	// 	const data = e.body;
-	// 	if (data.object === 'page') {
-	// 		data.entry.forEach(entry => {
-	// 			entry.messaging.forEach(event => {
-	// 				if (event.message) {
-	// 					// Yay! We got a new message!
-	// 					// We retrieve the Facebook user ID of the sender
-	// 					const sender = event.sender.id;
+  // Process POST request containing message events
+  console.log(`event: ${JSON.stringify(e, null, 2)}`);
+  console.log(`context: ${JSON.stringify(ctx, null, 2)}`);
 
-	// 					// We retrieve the user's current session, or create one if it doesn't exist
-	// 					// This is needed for our bot to figure out the conversation history
-	// 					const sessionId = findOrCreateSession(sender);
+  if (e.httpMethod === "POST") {
+    console.log(`body: ${e.body}`);
+    const data = JSON.parse(e.body);
+    if (data.object === 'page') {
+      data.entry.forEach(entry => {
+        entry.messaging.forEach(event => {
+          console.log(`event: ${JSON.stringify(event, null, 2)}`);
+          if (event.message) {
+            // Yay! We got a new message!
+            // We retrieve the Facebook user ID of the sender
+            const sender = event.sender.id;
 
-	// 					// We retrieve the message content
-	// 					const {text, attachments} = event.message;
+            // We retrieve the user's current session, or create one if it doesn't exist
+            // This is needed for our bot to figure out the conversation history
+            const sessionId = findOrCreateSession(sender);
 
-	// 					if (attachments) {
-	// 						// We received an attachment
-	// 						// Let's reply with an automatic message
-	// 						fbMessage(sender, 'Sorry I can only process text messages for now.')
-	// 						.catch(console.error);
-	// 					} else if (text) {
-	// 						// We received a text message
+            // We retrieve the message content
+            const {text, attachments} = event.message;
+            console.log("text: " + text);
 
-	// 						// Let's forward the message to the Wit.ai Bot Engine
-	// 						// This will run all actions until our bot has nothing left to do
-	// 						wit.runActions(
-	// 							sessionId, // the user's current session
-	// 							text, // the user's message
-	// 							sessions[sessionId].context // the user's current session state
-	// 						).then((context) => {
-	// 							// Our bot did everything it has to do.
-	// 							// Now it's waiting for further messages to proceed.
-	// 							console.log('Waiting for next user messages');
+            if (attachments) {
+              // We received an attachment
+              // Let's reply with an automatic message
+              fbMessage(sender, 'Sorry I can only process text messages for now.')
+                .catch(console.error);
+            } else if (text) {
+              // We received a text message
 
-	// 							// Based on the session state, you might want to reset the session.
-	// 							// This depends heavily on the business logic of your bot.
-	// 							// Example:
-	// 							// if (context['done']) {
-	// 							//   delete sessions[sessionId];
-	// 							// }
+              console.log("before runActions");
+              // Let's forward the message to the Wit.ai Bot Engine
+              // This will run all actions until our bot has nothing left to do
+              wit.runActions(
+                sessionId, // the user's current session
+                text, // the user's message
+                sessions[sessionId].context // the user's current session state
+              ).then((context) => {
+                // Our bot did everything it has to do.
+                // Now it's waiting for further messages to proceed.
+                console.log('Waiting for next user messages');
 
-	// 							// Updating the user's current session state
-	// 							sessions[sessionId].context = context;
-	// 						})
-	// 						.catch((err) => {
-	// 							console.error('Oops! Got an error from Wit: ', err.stack || err);
-	// 						})
-	// 					}
-	// 				} else {
-	// 					console.log('received event', JSON.stringify(event));
-	// 				}
-	// 			});
-	// 		});
-	// 	}
+                // Based on the session state, you might want to reset the session.
+                // This depends heavily on the business logic of your bot.
+                // Example:
+                // if (context['done']) {
+                //   delete sessions[sessionId];
+                // }
 
-	} else if (e.httpMethod === "GET") {
-		// Process GET request for webhook setup
-		var params = e.queryStringParameters;
+                // Updating the user's current session state
+                sessions[sessionId].context = context;
+              })
+                .catch((err) => {
+                  console.error('Oops! Got an error from Wit: ', err.stack || err);
+                })
+              console.log("after runActions");
+            }
+          } else {
+            console.log('received event', JSON.stringify(event));
+          }
+        });
+      });
+    }
 
-		if (params['hub.mode'] === 'subscribe' && params['hub.verify_token'] === FB_VERIFY_TOKEN) {
-			let challenge = params['hub.challenge'];
-			responseBody = parseInt(challenge);
-		} else {
-			responseBody = 'Error, wrong validation token';
-		}
-	}
+  } else if (e.httpMethod === "GET") {
+    // Process GET request for webhook setup
+    var params = e.queryStringParameters;
+
+    if (params['hub.mode'] === 'subscribe' && params['hub.verify_token'] === FB_VERIFY_TOKEN) {
+      let challenge = params['hub.challenge'];
+      responseBody = parseInt(challenge);
+    } else {
+      responseBody = 'Error, wrong validation token';
+    }
+  }
 
   let response = {
-      statusCode: responseCode,
-      headers: responseHeaders,
-      body: responseBody
-    };
+    statusCode: responseCode,
+    headers: responseHeaders,
+    body: responseBody
+  };
   ctx.succeed(response);
 };
 
@@ -226,8 +231,8 @@ function verifyRequestSignature(req, res, buf) {
     var signatureHash = elements[1];
 
     var expectedHash = crypto.createHmac('sha1', FB_APP_SECRET)
-                        .update(buf)
-                        .digest('hex');
+      .update(buf)
+      .digest('hex');
 
     if (signatureHash != expectedHash) {
       throw new Error("Couldn't validate the request signature.");
