@@ -5,8 +5,8 @@ const crypto = require('crypto');
 const fetch = require('node-fetch');
 const request = require('request');
 
-let Wit = require('cse498capstonewit').Wit;
-let log = require('cse498capstonewit').log;
+let Wit = require('node-wit').Wit;
+let log = require('node-wit').log;
 
 let FB_VERIFY_TOKEN = 'this_is_my_verify_token';
 // crypto.randomBytes(8, (err, buff) => {
@@ -22,6 +22,7 @@ let FB_VERIFY_TOKEN = 'this_is_my_verify_token';
 // https://developers.facebook.com/docs/messenger-platform/send-api-reference
 
 const fbMessage = (id, text) => {
+  console.log("beginning of fbMessage");
   const body = JSON.stringify({
     recipient: { id },
     message: { text },
@@ -116,17 +117,16 @@ const actions = {
 const wit = new Wit({
   accessToken: WIT_TOKEN,
   actions,
-  logger: new log.Logger(log.INFO)
+  logger: new log.Logger(log.DEBUG)
 });
 
-exports.handle = (e, ctx, callback) => {
+var conversationManager = (e) => {
   var responseCode = 200;
   var responseHeaders = {};
   var responseBody = '';
 
   // Process POST request containing message events
   console.log(`event: ${JSON.stringify(e, null, 2)}`);
-  console.log(`context: ${JSON.stringify(ctx, null, 2)}`);
 
   if (e.httpMethod === "POST") {
     console.log(`body: ${e.body}`);
@@ -177,6 +177,12 @@ exports.handle = (e, ctx, callback) => {
 
                 // Updating the user's current session state
                 sessions[sessionId].context = context;
+
+                return {
+                  statusCode: responseCode,
+                  headers: responseHeaders,
+                  body: responseBody
+                };
               })
                 .catch((err) => {
                   console.error('Oops! Got an error from Wit: ', err.stack || err);
@@ -200,15 +206,19 @@ exports.handle = (e, ctx, callback) => {
     } else {
       responseBody = 'Error, wrong validation token';
     }
-  }
 
-  let response = {
-    statusCode: responseCode,
-    headers: responseHeaders,
-    body: responseBody
-  };
-  ctx.succeed(response);
+    return {
+      statusCode: responseCode,
+      headers: responseHeaders,
+      body: responseBody
+    };
+  }
 };
+
+exports.handle = (event, context) => {
+  Promise.resolve(conversationManager(event))
+    .then(context.succeed.bind(context), context.fail.bind(context));
+}
 
 /*
  * Verify that the callback came from Facebook. Using the App Secret from
